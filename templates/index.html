@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        RoboTech Smart Surveillance
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+</head>
+
+
+<body>
+
+    <div class="container">
+
+        <header>
+
+            <div>
+                <h1>Smart Surveillance System</h1>
+                <p>RoboTech Labs — Edge AI Monitoring</p>
+            </div>
+
+            <div
+                id="systemIndicator"
+                class="system-indicator"
+            >
+                SYSTEM ONLINE
+            </div>
+
+        </header>
+
+
+        <section class="status-grid">
+
+            <div class="status-card">
+
+                <span class="label">
+                    CAMERA
+                </span>
+
+                <strong id="cameraStatus">
+                    Checking...
+                </strong>
+
+            </div>
+
+
+            <div class="status-card">
+
+                <span class="label">
+                    AI STATUS
+                </span>
+
+                <strong id="detectionStatus">
+                    Checking...
+                </strong>
+
+            </div>
+
+
+            <div class="status-card">
+
+                <span class="label">
+                    CONFIDENCE
+                </span>
+
+                <strong id="confidence">
+                    --
+                </strong>
+
+            </div>
+
+        </section>
+
+
+        <section class="camera-panel">
+
+           <div class="panel-title">
+                <h2>Live Camera</h2>
+                <span class="live">● LIVE</span>
+           </div>
+
+           <div class="camera-container">
+                <img
+                   id="cameraFeed"
+                   src="/video_feed"
+                   alt="Live Surveillance Feed"
+                >
+           </div>
+
+        </section>
+
+        <section class="events-panel">
+
+           <div class="panel-title">
+
+                <h2>Recent Detection Events</h2>
+
+                <span class="event-total">
+                    Total:
+                    <strong id="totalEvents">0</strong>
+                </span>
+
+            </div>
+
+            <div
+                id="eventsContainer"
+                class="events-container"
+    >
+
+                <p class="loading-events">
+                    Loading events...
+                </p>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    <script>
+
+        async function updateStatus() {
+
+            try {
+
+                const response =
+                    await fetch("/status");
+
+                const data =
+                    await response.json();
+
+
+                const camera =
+                    document.getElementById(
+                        "cameraStatus"
+                    );
+
+                const detection =
+                    document.getElementById(
+                        "detectionStatus"
+                    );
+
+                const confidence =
+                    document.getElementById(
+                        "confidence"
+                    );
+
+
+                if (data.camera_online) {
+
+                    camera.textContent =
+                        "ONLINE";
+
+                    camera.className =
+                        "status-good";
+
+                } else {
+
+                    camera.textContent =
+                        "OFFLINE";
+
+                    camera.className =
+                        "status-danger";
+                }
+
+
+                if (data.person_detected) {
+
+                    detection.textContent =
+                        "PERSON DETECTED";
+
+                    detection.className =
+                        "status-danger";
+
+                    confidence.textContent =
+                        (
+                            data.confidence *
+                            100
+                        ).toFixed(1) + "%";
+
+                } else {
+
+                    detection.textContent =
+                        "NO PERSON";
+
+                    detection.className =
+                        "status-good";
+
+                    confidence.textContent =
+                        "--";
+                }
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "Status error:",
+                    error
+                );
+            }
+        }
+
+        async function updateEvents() {
+
+            try {
+
+                const response = await fetch("/events");
+
+                const data = await response.json();
+
+                const container =
+                    document.getElementById(
+                        "eventsContainer"
+                    );
+
+                const total =
+                    document.getElementById(
+                        "totalEvents"
+                    );
+
+                total.textContent =
+                    data.total_events;
+
+                if (data.events.length === 0) {
+
+                    container.innerHTML = `
+                        <div class="no-events">
+                            No detection events yet.
+                        </div>
+                    `;
+
+                    return;
+                }
+
+                let html = "";
+
+                data.events.forEach(event => {
+
+                    const confidence =
+                        (
+                            event.confidence * 100
+                        ).toFixed(1);
+
+                    html += `
+                        <div class="event-card">
+
+                            <img
+                                src="${event.image_url}"
+                                class="event-image"
+                                alt="Person detection"
+                            >
+
+                            <div class="event-info">
+
+                                <div class="event-top">
+
+                                    <strong>
+                                       ${event.object_type}
+                                    </strong>
+
+                                    <span class="event-id">
+                                       #${event.event_id}
+                                    </span>
+
+                                </div>
+
+                                <div class="event-confidence">
+                                    ${confidence}% confidence
+                                </div>
+
+                                <div class="event-time">
+                                    ${event.timestamp}
+                                </div>
+
+                            </div>
+
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+
+            } catch (error) {
+
+                console.error(
+                    "Event loading error:",
+                    error
+                );
+            }
+        }
+
+
+        setInterval(
+            updateStatus,
+            1000
+        );
+        updateStatus();
+
+        setInterval(updateEvents, 3000);
+
+        updateEvents();
+
+
+    
+
+    </script>
+
+</body>
+
+</html>

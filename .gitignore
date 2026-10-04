@@ -1,0 +1,46 @@
+# Virtual environments
+.venv/
+venv/
+
+# Environment variables / secrets
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Runtime database
+surveillance.db
+*.db
+
+# Generated detection snapshots
+events/
+events/*.jpg
+events/*.jpeg
+events/*.png
+
+# YOLO model weights
+*.pt
+
+# VS Code
+.vscode/
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# macOS
+.DS_Store
+
+# Old development / test files
+ai_test.py
+detector_test.py
+get_chat_id.py
+main.py
+mp_persondet.py
+telegram_test.py
+yolo_test.py
+
+# Old MediaPipe model
+models/
