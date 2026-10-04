@@ -104,6 +104,65 @@
 
         </section>
 
+        <section class="statistics-panel">
+
+            <div class="panel-title">
+                <h2>Surveillance Statistics</h2>
+            </div>
+
+            <div class="statistics-grid">
+
+                <div class="stat-card">
+
+                    <span class="stat-label">
+                        TOTAL EVENTS
+                    </span>
+
+                    <span
+                        class="stat-value"
+                        id="statTotalEvents"
+                    >
+                        0
+                    </span>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <span class="stat-label">
+                        TODAY'S EVENTS
+                    </span>
+
+                    <span
+                        class="stat-value"
+                        id="statTodayEvents"
+                    >
+                        0
+                    </span>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <span class="stat-label">
+                        LAST DETECTION
+                    </span>
+
+                    <span
+                        class="stat-value stat-time"
+                        id="statLastDetection"
+                    >
+                        --
+                    </span>
+
+                </div>
+
+            </div>
+
+        </section>
+
         <section class="events-panel">
 
            <div class="panel-title">
@@ -305,19 +364,64 @@
             }
         }
 
+        async function updateStatistics() {
 
-        setInterval(
-            updateStatus,
-            1000
-        );
+            try {
+
+                const response =
+                    await fetch("/statistics");
+
+                const data =
+                    await response.json();
+
+
+                document.getElementById(
+                    "statTotalEvents"
+                ).textContent =
+                    data.total_events;
+
+
+                document.getElementById(
+                    "statTodayEvents"
+                ).textContent =
+                    data.today_events;
+
+
+                const lastDetection =
+                    document.getElementById(
+                        "statLastDetection"
+                    );
+
+
+                if (data.last_detection) {
+
+                    lastDetection.textContent =
+                        data.last_detection;
+
+                } else {
+
+                    lastDetection.textContent =
+                        "--";
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "Statistics loading error:",
+                    error
+                );
+            }
+        }
+
+
+        setInterval(updateStatus, 1000);
         updateStatus();
 
         setInterval(updateEvents, 3000);
-
         updateEvents();
 
-
-    
+        setInterval(updateStatistics, 3000);
+        updateStatistics();
 
     </script>
 

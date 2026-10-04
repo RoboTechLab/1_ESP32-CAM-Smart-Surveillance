@@ -9,7 +9,8 @@ from flask import (
 from database import (
     initialize_database,
     get_recent_events,
-    get_event_count
+    get_event_count,
+    get_dashboard_statistics
 )
 from camera_service import CameraService
 from config import EVENTS_DIR
@@ -133,6 +134,13 @@ def event_image(event_id):
             )
 
     return "Image not found", 404
+
+@app.route("/statistics")
+def statistics():
+
+    stats = get_dashboard_statistics()
+
+    return jsonify(stats)
 
 
 if __name__ == "__main__":

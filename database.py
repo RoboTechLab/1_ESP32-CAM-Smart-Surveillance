@@ -128,3 +128,63 @@ def get_event_count():
     connection.close()
 
     return count
+
+def get_dashboard_statistics():
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    # ----------------------------------
+    # TOTAL EVENTS
+    # ----------------------------------
+
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM events
+        """
+    )
+
+    total_events = cursor.fetchone()[0]
+
+    # ----------------------------------
+    # TODAY'S EVENTS
+    # ----------------------------------
+
+    cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM events
+        WHERE DATE(timestamp) = DATE('now', 'localtime')
+        """
+    )
+
+    today_events = cursor.fetchone()[0]
+
+    # ----------------------------------
+    # LAST DETECTION
+    # ----------------------------------
+
+    cursor.execute(
+        """
+        SELECT timestamp
+        FROM events
+        ORDER BY event_id DESC
+        LIMIT 1
+        """
+    )
+
+    result = cursor.fetchone()
+
+    if result:
+        last_detection = result[0]
+    else:
+        last_detection = None
+
+    connection.close()
+
+    return {
+        "total_events": total_events,
+        "today_events": today_events,
+        "last_detection": last_detection
+    }
