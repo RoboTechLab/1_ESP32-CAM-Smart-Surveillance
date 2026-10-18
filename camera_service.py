@@ -31,6 +31,11 @@ class CameraService:
 
         self.running = True
 
+        # Camera reconnection settings
+        self.reconnect_delay = 3.0
+        self.camera_failure_count = 0
+        self.max_camera_failures = 10     
+
         # ----------------------------------
         # PERSON LEAVE / REARM STATE
         # ----------------------------------
@@ -86,11 +91,33 @@ class CameraService:
 
             if not ret:
 
-                self.camera_online = False
-                time.sleep(0.05)
+                self.camera_failure_count += 1
+
+                print(
+                    f"Camera frame failure "
+                    f"{self.camera_failure_count}/"
+                    f"{self.max_camera_failures}"
+                )
+
+                # Only declare the camera disconnected
+                # after several consecutive failures.
+                if (
+                    self.camera_failure_count
+                    >= self.max_camera_failures
+                ):
+
+                    reconnected = (
+                        self._reconnect_camera()
+                    )
+
+                    if not reconnected:
+                        break
 
                 continue
 
+
+            # Successful frame received
+            self.camera_failure_count = 0
             self.camera_online = True
 
             # ----------------------------------
@@ -383,6 +410,69 @@ class CameraService:
                 self.latest_frame = (
                     buffer.tobytes()
                 )
+
+    def _reconnect_camera(self):
+
+        print()
+        print("============================")
+        print("CAMERA CONNECTION LOST")
+        print("============================")
+        print(
+            f"Retrying in "
+            f"{self.reconnect_delay} seconds..."
+        )
+        print()
+
+        self.camera_online = False
+
+        self.person_detected = False
+        self.confidence = 0.0
+        self.latest_frame = None
+
+        # Remove old camera connection
+        if self.camera is not None:
+            self.camera.release()
+
+        time.sleep(self.reconnect_delay)
+
+        while self.running:
+
+            print("Attempting camera reconnection...")
+
+            new_camera = cv2.VideoCapture(
+                CAMERA_SOURCE
+            )
+
+            if new_camera.isOpened():
+
+                ret, frame = new_camera.read()
+
+                if ret:
+
+                    self.camera = new_camera
+
+                    self.camera_online = True
+                    self.camera_failure_count = 0
+
+                    print()
+                    print("============================")
+                    print("CAMERA RECONNECTED")
+                    print("============================")
+                    print()
+
+                    return True
+
+            new_camera.release()
+
+            print(
+                f"Camera unavailable. "
+                f"Retrying in "
+                f"{self.reconnect_delay} seconds..."
+            )
+
+            time.sleep(self.reconnect_delay)
+
+        return False
 
 
     def get_frame(self):

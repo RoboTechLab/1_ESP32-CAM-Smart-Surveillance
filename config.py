@@ -39,4 +39,4 @@ EVENT_COOLDOWN_SECONDS = 15
 
 # 0 = laptop's default webcam.
 # Later this will be replaced by the ESP32-CAM URL.
-CAMERA_SOURCE = 0
+CAMERA_SOURCE = "http://192.168.100.218:81/stream"
