@@ -13,6 +13,7 @@ from database import (
     get_dashboard_statistics
 )
 from camera_service import CameraService
+from motion_service import MotionService
 from config import EVENTS_DIR
 import time
 
@@ -28,6 +29,7 @@ print("------------------------------------")
 initialize_database()
 
 camera_service = CameraService()
+motion_service = MotionService()
 
 
 @app.route("/")
@@ -79,6 +81,11 @@ def status():
     return jsonify(
         camera_service.get_status()
     )
+
+@app.route("/motion_status")
+def motion_status():
+    return jsonify(motion_service.get_status())
+
 
 @app.route("/events")
 def events():

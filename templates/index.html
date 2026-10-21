@@ -20,6 +20,14 @@
         href="{{ url_for('static', filename='style.css') }}"
     >
 
+    <style>
+        /* Additive styles: existing static/style.css is preserved. */
+        .motion-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-top: 16px; }
+        .motion-card { padding: 18px; border-radius: 12px; background: rgba(127,127,127,.09); border: 1px solid rgba(127,127,127,.2); }
+        .motion-card .label { display: block; margin-bottom: 10px; opacity: .75; font-size: .8rem; }
+        .motion-card strong { font-size: 1.15rem; }
+        .motion-note { opacity: .75; line-height: 1.5; margin-top: 14px; font-size: .87rem; }
+    </style>
 </head>
 
 
@@ -86,6 +94,16 @@
 
         </section>
 
+
+        <section class="statistics-panel" aria-label="Microwave motion sensor">
+            <div class="panel-title"><h2>RCWL Microwave Motion Sensor</h2></div>
+            <div class="motion-grid">
+                <div class="motion-card"><span class="label">SENSOR CONNECTION</span><strong id="motionOnline">Checking...</strong></div>
+                <div class="motion-card"><span class="label">CURRENT MOTION</span><strong id="motionDetected">Checking...</strong></div>
+                <div class="motion-card"><span class="label">ESP32 BOOT TRIGGER COUNT</span><strong id="motionBootCount">--</strong></div>
+            </div>
+            <p class="motion-note">ESP32 boot count resets when the board restarts. Motion triggers are logged independently of camera detections.</p>
+        </section>
 
         <section class="camera-panel">
 
@@ -161,6 +179,18 @@
 
             </div>
 
+        </section>
+
+        <section class="statistics-panel" aria-label="Sensor comparison">
+            <div class="panel-title"><h2>Motion vs AI — Event Comparison</h2></div>
+            <div class="motion-grid">
+                <div class="motion-card"><span class="label">RCWL TRIGGERS — TODAY</span><strong id="statMotionToday">0</strong></div>
+                <div class="motion-card"><span class="label">YOLO EVENTS — TODAY</span><strong id="statYoloToday">0</strong></div>
+                <div class="motion-card"><span class="label">CAMERA / RCWL RATIO — TODAY</span><strong id="statRatio">--</strong></div>
+                <div class="motion-card"><span class="label">RCWL − YOLO EVENTS — TODAY</span><strong id="statDifference">--</strong></div>
+                <div class="motion-card"><span class="label">RCWL TRIGGERS — RECORDED TOTAL</span><strong id="statMotionTotal">0</strong></div>
+            </div>
+            <p class="motion-note">This ratio is a comparison of event counts, NOT camera accuracy or false-positive percentage. Camera and RCWL events must be time-matched and manually verified for valid performance measurements. The camera database may already contain older events.</p>
         </section>
 
         <section class="events-panel">
@@ -272,6 +302,28 @@
                     "Status error:",
                     error
                 );
+            }
+        }
+
+        async function updateMotionStatus() {
+            try {
+                const response = await fetch("/motion_status");
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                const connection = document.getElementById("motionOnline");
+                const motion = document.getElementById("motionDetected");
+                connection.textContent = data.sensor_online ? "ONLINE" : "OFFLINE";
+                connection.className = data.sensor_online ? "status-good" : "status-danger";
+                motion.textContent = !data.sensor_online ? "UNAVAILABLE" :
+                    (data.motion_detected ? "MOTION DETECTED" : "NO MOTION");
+                motion.className = !data.sensor_online || data.motion_detected ? "status-danger" : "status-good";
+                document.getElementById("motionBootCount").textContent =
+                    data.sensor_online ? data.trigger_count : "--";
+            } catch (error) {
+                console.error("Motion status error:", error);
+                document.getElementById("motionOnline").textContent = "OFFLINE";
+                document.getElementById("motionDetected").textContent = "UNAVAILABLE";
+                document.getElementById("motionBootCount").textContent = "--";
             }
         }
 
@@ -393,6 +445,14 @@
                     );
 
 
+                document.getElementById("statMotionToday").textContent = data.motion_today;
+                document.getElementById("statMotionTotal").textContent = data.motion_total;
+                document.getElementById("statYoloToday").textContent = data.today_events;
+                document.getElementById("statRatio").textContent =
+                    data.today_camera_to_motion_ratio === null ? "--" :
+                    data.today_camera_to_motion_ratio.toFixed(1) + "%";
+                document.getElementById("statDifference").textContent = data.today_event_difference;
+
                 if (data.last_detection) {
 
                     lastDetection.textContent =
@@ -413,6 +473,9 @@
             }
         }
 
+
+        setInterval(updateMotionStatus, 1000);
+        updateMotionStatus();
 
         setInterval(updateStatus, 1000);
         updateStatus();

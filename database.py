@@ -31,6 +31,15 @@ def initialize_database():
         """
     )
 
+    # RCWL trigger batches stored separately from camera snapshots.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS motion_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL,
+            trigger_count INTEGER NOT NULL CHECK(trigger_count > 0)
+        )
+    """)
+
     connection.commit()
 
     connection.close()
@@ -181,10 +190,43 @@ def get_dashboard_statistics():
     else:
         last_detection = None
 
+    cursor.execute("SELECT COALESCE(SUM(trigger_count), 0) FROM motion_events")
+    motion_total = cursor.fetchone()[0]
+
+    cursor.execute("""
+        SELECT COALESCE(SUM(trigger_count), 0)
+        FROM motion_events
+        WHERE DATE(timestamp) = DATE('now', 'localtime')
+    """)
+    motion_today = cursor.fetchone()[0]
+
     connection.close()
 
+    # Descriptive ratio only: different detection systems may count
+    # different kinds of events; do not call this camera accuracy.
+    today_ratio = round(today_events / motion_today * 100, 1) if motion_today else None
+    today_difference = motion_today - today_events
+
     return {
+        "motion_total": motion_total,
+        "motion_today": motion_today,
+        "today_camera_to_motion_ratio": today_ratio,
+        "today_event_difference": today_difference,
         "total_events": total_events,
         "today_events": today_events,
         "last_detection": last_detection
     }
+
+def insert_motion_batch(timestamp, trigger_count):
+    """Save newly observed RCWL rising edges, grouped at observation time."""
+    if not isinstance(trigger_count, int) or trigger_count <= 0:
+        return
+    connection = get_connection()
+    try:
+        connection.execute(
+            "INSERT INTO motion_events (timestamp, trigger_count) VALUES (?, ?)",
+            (timestamp, trigger_count)
+        )
+        connection.commit()
+    finally:
+        connection.close()
