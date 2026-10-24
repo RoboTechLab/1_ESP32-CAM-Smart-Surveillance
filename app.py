@@ -29,7 +29,7 @@ print("------------------------------------")
 initialize_database()
 
 camera_service = CameraService()
-motion_service = MotionService()
+motion_service = None
 
 
 @app.route("/")
@@ -84,6 +84,12 @@ def status():
 
 @app.route("/motion_status")
 def motion_status():
+    if motion_service is None:
+        return jsonify({
+            "sensor_online": False,
+            "motion_detected": False,
+            "trigger_count": 0
+        })
     return jsonify(motion_service.get_status())
 
 

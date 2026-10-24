@@ -40,7 +40,7 @@ class MotionService:
             try:
                 response = requests.get(
                     self.url,
-                    timeout=2
+                    timeout=(1, 2)
                 )
                 response.raise_for_status()
 
@@ -86,7 +86,7 @@ class MotionService:
 
                 print("RCWL sensor connection error:", error)
 
-            time.sleep(0.5)
+            time.sleep(2)
 
     def get_status(self):
         with self.lock:
