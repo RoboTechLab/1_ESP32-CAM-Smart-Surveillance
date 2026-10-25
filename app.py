@@ -22,14 +22,14 @@ app = Flask(__name__)
 
 
 print("------------------------------------")
-print("RoboTech Smart Surveillance Server")
+print("Santhozh Smart Surveillance Server")
 print("------------------------------------")
 
 
 initialize_database()
 
 camera_service = CameraService()
-motion_service = None
+motion_service = MotionService()
 
 
 @app.route("/")
